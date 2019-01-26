@@ -9,7 +9,8 @@ import {
     View,
     Button
 } from "react-native";
-import { WebBrowser, ImagePicker } from "expo";
+import { Ionicons } from "@expo/vector-icons";
+import { WebBrowser, ImagePicker, Permissions, Camera } from "expo";
 
 import { MonoText } from "../components/StyledText";
 
@@ -18,9 +19,20 @@ export default class HomeScreen extends React.Component {
         header: null
     };
     state = {
-        image: null
+        image: null,
+        hasCameraPermission: null,
+        type: Camera.Constants.Type.back,
+        launchCamera: false,
+        showPicker: true
     };
+    async componentDidMount() {
+        const { status } = await Permissions.askAsync(
+            Permissions.CAMERA_ROLL,
+            Permissions.CAMERA
+        );
 
+        this.setState({ hasCameraPermission: status === "granted" });
+    }
     _pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
             allowsEditing: true,
@@ -33,26 +45,121 @@ export default class HomeScreen extends React.Component {
             this.setState({ image: result.uri });
         }
     };
-
+    _launchCamera = async () => {
+        this.state.showPicker
+            ? this.setState({ showPicker: false, launchCamera: true })
+            : this.setState({ showPicker: true, launchCamera: false });
+    };
+    snap = async () => {
+        if (this.camera) {
+            let photo = await this.camera.takePictureAsync();
+            alert(JSON.stringify(photo.uri));
+            this.setState({
+                image: photo.uri,
+                showPicker: true,
+                launchCamera: false
+            });
+        }
+    };
     render() {
-        let { image } = this.state;
+        let { image, launchCamera, showPicker } = this.state;
         return (
             <View
                 style={{
-                    flex: 1,
-                    alignItems: "center",
-                    justifyContent: "center"
+                    flex: 1
                 }}
             >
-                <Button
-                    title="Pick an image from camera roll"
-                    onPress={this._pickImage}
-                />
-                {image && (
-                    <Image
-                        source={{ uri: image }}
-                        style={{ width: 200, height: 200 }}
-                    />
+                {showPicker && (
+                    <View
+                        style={{
+                            flex: 1,
+                            justifyContent: "center",
+                            alignItems: "center"
+                        }}
+                    >
+                        <Button
+                            title="Pick an image from camera roll"
+                            onPress={this._pickImage}
+                        />
+                        {image && (
+                            <Image
+                                source={{ uri: image }}
+                                style={{ width: 200, height: 200 }}
+                            />
+                        )}
+                        <Button
+                            style={{ marginTop: 500 }}
+                            title="Launch Camera"
+                            onPress={this._launchCamera}
+                        />
+                    </View>
+                )}
+                {launchCamera && (
+                    <View style={{ flex: 1 }}>
+                        <Camera
+                            style={{ flex: 1 }}
+                            type={this.state.type}
+                            ref={ref => {
+                                this.camera = ref;
+                            }}
+                        >
+                            <View
+                                style={{
+                                    flex: 10,
+                                    backgroundColor: "transparent",
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    alignItems: "flex-end"
+                                }}
+                            >
+                                <TouchableOpacity onPress={this.snap}>
+                                    <Ionicons
+                                        name="ios-radio-button-on"
+                                        size={70}
+                                        color="white"
+                                    />
+                                </TouchableOpacity>
+                            </View>
+                            <View
+                                style={{
+                                    flex: 1,
+                                    backgroundColor: "transparent",
+                                    flexDirection: "row",
+                                    justifyContent: "space-between",
+                                    alignItems: "space-between"
+                                }}
+                            >
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        this.setState({
+                                            type:
+                                                this.state.type ===
+                                                Camera.Constants.Type.back
+                                                    ? Camera.Constants.Type
+                                                          .front
+                                                    : Camera.Constants.Type.back
+                                        });
+                                    }}
+                                >
+                                    <Text
+                                        style={{
+                                            fontSize: 18,
+                                            marginBottom: 10,
+                                            color: "white"
+                                        }}
+                                    >
+                                        {" "}
+                                        Flip{" "}
+                                    </Text>
+                                </TouchableOpacity>
+
+                                <Button
+                                    title="Close Camera"
+                                    onPress={this._launchCamera}
+                                />
+                            </View>
+                        </Camera>
+                    </View>
                 )}
             </View>
         );
