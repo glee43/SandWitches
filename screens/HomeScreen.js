@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { WebBrowser, ImagePicker, Permissions, Camera } from "expo";
 import RNFetchBlob from "react-native-fetch-blob";
 import { MonoText } from "../components/StyledText";
+import { readFile } from "react-native-fs";
 const food = [
     "🥗 salad",
     "🍞 toast",
@@ -22,6 +23,7 @@ const food = [
     "🍲 bread bowl",
     "🥟 calzone"
 ];
+const url = "https://cube-rule.herokuapp.com/classify"
 export default class HomeScreen extends React.Component {
     static navigationOptions = {
         header: null
@@ -31,7 +33,8 @@ export default class HomeScreen extends React.Component {
         hasCameraPermission: null,
         type: Camera.Constants.Type.back,
         launchCamera: true,
-        showPicker: false
+        showPicker: false,
+        imageType:0,
     };
 
     async componentDidMount() {
@@ -56,6 +59,7 @@ export default class HomeScreen extends React.Component {
                 showPicker: true,
                 launchCamera: false
             });
+            __postImage();
         }
     };
     _launchCamera = async () => {
@@ -73,10 +77,11 @@ export default class HomeScreen extends React.Component {
                 showPicker: true,
                 launchCamera: false
             });
+            __postImage();
         }
     };
     render() {
-        let { image, launchCamera, showPicker } = this.state;
+        let { image, launchCamera, showPicker, imageType } = this.state;
         return (
             <View
                 style={{
@@ -111,7 +116,7 @@ export default class HomeScreen extends React.Component {
                                 fontFamily: "Apple Color Emoji"
                             }}
                         >
-                            {food[Math.floor(Math.random() * 6)]}
+                            {food[imageType]}
                         </Text>
                         {image && (
                             <Image
@@ -276,6 +281,21 @@ export default class HomeScreen extends React.Component {
             "https://docs.expo.io/versions/latest/guides/up-and-running.html#can-t-see-your-changes"
         );
     };
+
+    __postImage = () => {
+        let contents = await readFile(this.state.image, "base64");
+        let response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json', 'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              image: contents
+            }),
+        });
+        responseJson = response.json();
+        this.setState({ imageType: response.type });
+    }
 }
 
 const styles = StyleSheet.create({
