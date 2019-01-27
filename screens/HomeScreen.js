@@ -11,9 +11,17 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { WebBrowser, ImagePicker, Permissions, Camera } from "expo";
-
+import RNFetchBlob from "react-native-fetch-blob";
 import { MonoText } from "../components/StyledText";
-
+const food = [
+    "🥗 salad",
+    "🍞 toast",
+    "🥪 sandwich",
+    "🌮 taco",
+    "🍱 sushi",
+    "🍲 bread bowl",
+    "🥟 calzone"
+];
 export default class HomeScreen extends React.Component {
     static navigationOptions = {
         header: null
@@ -22,9 +30,10 @@ export default class HomeScreen extends React.Component {
         image: null,
         hasCameraPermission: null,
         type: Camera.Constants.Type.back,
-        launchCamera: false,
-        showPicker: true
+        launchCamera: true,
+        showPicker: false
     };
+
     async componentDidMount() {
         const { status } = await Permissions.askAsync(
             Permissions.CAMERA_ROLL,
@@ -42,7 +51,11 @@ export default class HomeScreen extends React.Component {
         console.log(result);
 
         if (!result.cancelled) {
-            this.setState({ image: result.uri });
+            this.setState({
+                image: result.uri,
+                showPicker: true,
+                launchCamera: false
+            });
         }
     };
     _launchCamera = async () => {
@@ -54,6 +67,7 @@ export default class HomeScreen extends React.Component {
         if (this.camera) {
             let photo = await this.camera.takePictureAsync();
             alert(JSON.stringify(photo.uri));
+
             this.setState({
                 image: photo.uri,
                 showPicker: true,
@@ -73,25 +87,52 @@ export default class HomeScreen extends React.Component {
                     <View
                         style={{
                             flex: 1,
-                            justifyContent: "center",
+                            justifyContent: "space-evenly",
                             alignItems: "center"
                         }}
                     >
-                        <Button
-                            title="Pick an image from camera roll"
+                        {/* <TouchableOpacity
+                            style={{ alignItems: "center" }}
                             onPress={this._pickImage}
-                        />
+                        >
+                            <Ionicons
+                                name="ios-document"
+                                size={70}
+                                color="#42adf4"
+                            />
+                            <Text style={{ color: "#42adf4", fontSize: 20 }}>
+                                Pick image from camera roll
+                            </Text>
+                        </TouchableOpacity> */}
+                        <Text
+                            style={{
+                                fontSize: 40,
+                                textAlign: "center",
+                                fontFamily: "Apple Color Emoji"
+                            }}
+                        >
+                            {food[Math.floor(Math.random() * 6)]}
+                        </Text>
                         {image && (
                             <Image
                                 source={{ uri: image }}
                                 style={{ width: 200, height: 200 }}
                             />
                         )}
-                        <Button
-                            style={{ marginTop: 500 }}
-                            title="Launch Camera"
+
+                        <TouchableOpacity
+                            style={{ alignItems: "center" }}
                             onPress={this._launchCamera}
-                        />
+                        >
+                            <Ionicons
+                                name="ios-camera"
+                                size={70}
+                                color="#42adf4"
+                            />
+                            {/* <Text style={{ color: "#42adf4", fontSize: 20 }}>
+                                Launch Camera
+                            </Text> */}
+                        </TouchableOpacity>
                     </View>
                 )}
                 {launchCamera && (
@@ -105,17 +146,24 @@ export default class HomeScreen extends React.Component {
                         >
                             <View
                                 style={{
-                                    flex: 10,
                                     backgroundColor: "transparent",
                                     flexDirection: "row",
-                                    justifyContent: "center",
-                                    alignItems: "flex-end"
+                                    justifyContent: "space-between",
+                                    alignItems: "space-between",
+                                    marginTop: 40
                                 }}
                             >
-                                <TouchableOpacity onPress={this.snap}>
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        this._launchCamera();
+                                    }}
+                                    style={{
+                                        marginLeft: 15
+                                    }}
+                                >
                                     <Ionicons
-                                        name="ios-radio-button-on"
-                                        size={70}
+                                        name="ios-arrow-dropleft"
+                                        size={50}
                                         color="white"
                                     />
                                 </TouchableOpacity>
@@ -123,13 +171,48 @@ export default class HomeScreen extends React.Component {
                             <View
                                 style={{
                                     flex: 1,
+
                                     backgroundColor: "transparent",
                                     flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "space-between"
+                                    justifyContent: "center",
+                                    alignItems: "flex-end"
                                 }}
                             >
+                                <View
+                                    style={{
+                                        flerx: 1,
+                                        backgroundColor: "black",
+                                        position: "absolute",
+                                        height: 500
+                                    }}
+                                />
+                                <TouchableOpacity onPress={this.snap}>
+                                    <Ionicons
+                                        name="ios-radio-button-on"
+                                        size={70}
+                                        color="white"
+                                    />
+                                </TouchableOpacity>
                                 <TouchableOpacity
+                                    style={{
+                                        position: "absolute",
+                                        left: "10%",
+                                        bottom: "3%"
+                                    }}
+                                    onPress={this._pickImage}
+                                >
+                                    <Ionicons
+                                        name="ios-document"
+                                        size={50}
+                                        color="white"
+                                    />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={{
+                                        position: "absolute",
+                                        right: "10%",
+                                        bottom: "3%"
+                                    }}
                                     onPress={() => {
                                         this.setState({
                                             type:
@@ -141,22 +224,12 @@ export default class HomeScreen extends React.Component {
                                         });
                                     }}
                                 >
-                                    <Text
-                                        style={{
-                                            fontSize: 18,
-                                            marginBottom: 10,
-                                            color: "white"
-                                        }}
-                                    >
-                                        {" "}
-                                        Flip{" "}
-                                    </Text>
+                                    <Ionicons
+                                        name="ios-reverse-camera"
+                                        size={50}
+                                        color="white"
+                                    />
                                 </TouchableOpacity>
-
-                                <Button
-                                    title="Close Camera"
-                                    onPress={this._launchCamera}
-                                />
                             </View>
                         </Camera>
                     </View>
