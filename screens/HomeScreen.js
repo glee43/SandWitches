@@ -10,10 +10,15 @@ import {
     Button
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { WebBrowser, ImagePicker, Permissions, Camera } from "expo";
-import RNFetchBlob from "react-native-fetch-blob";
+import {
+    WebBrowser,
+    ImagePicker,
+    Permissions,
+    Camera,
+    ImageManipulator
+} from "expo";
 import { MonoText } from "../components/StyledText";
-import { readFile } from "react-native-fs";
+
 const food = [
     "🥗 salad",
     "🍞 toast",
@@ -23,7 +28,7 @@ const food = [
     "🍲 bread bowl",
     "🥟 calzone"
 ];
-const url = "https://cube-rule.herokuapp.com/classify"
+const url = "https://cube-rule.herokuapp.com/classify";
 export default class HomeScreen extends React.Component {
     static navigationOptions = {
         header: null
@@ -34,7 +39,7 @@ export default class HomeScreen extends React.Component {
         type: Camera.Constants.Type.back,
         launchCamera: true,
         showPicker: false,
-        imageType:0,
+        imageType: 0
     };
 
     async componentDidMount() {
@@ -59,7 +64,7 @@ export default class HomeScreen extends React.Component {
                 showPicker: true,
                 launchCamera: false
             });
-            __postImage();
+            this.__postImage();
         }
     };
     _launchCamera = async () => {
@@ -70,15 +75,45 @@ export default class HomeScreen extends React.Component {
     snap = async () => {
         if (this.camera) {
             let photo = await this.camera.takePictureAsync();
-            alert(JSON.stringify(photo.uri));
 
             this.setState({
                 image: photo.uri,
                 showPicker: true,
                 launchCamera: false
             });
-            __postImage();
+            this.__postImage();
         }
+    };
+
+    __postImage = async () => {
+        let contents = await ImageManipulator.manipulateAsync(
+            this.state.image,
+            [{ resize: { height: 512 } }],
+            { base64: true, compress: 0.1, format: "jpeg" }
+        );
+        console.log(contents);
+        let response = await fetch(url, {
+            method: "POST",
+            headers: {
+                Accept: "application/json",
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                image: contents.base64
+            })
+        })
+            .then(response => {
+                responseJson = JSON.parse(response._bodyInit);
+                this.setState({ imageType: responseJson.type });
+                alert("not error");
+            })
+            .catch(error => {
+                this.setState({
+                    imageType: Math.floor(Math.random() * 6)
+                });
+                alert("error");
+                throw error;
+            });
     };
     render() {
         let { image, launchCamera, showPicker, imageType } = this.state;
@@ -241,60 +276,6 @@ export default class HomeScreen extends React.Component {
                 )}
             </View>
         );
-    }
-
-    _maybeRenderDevelopmentModeWarning() {
-        if (__DEV__) {
-            const learnMoreButton = (
-                <Text
-                    onPress={this._handleLearnMorePress}
-                    style={styles.helpLinkText}
-                >
-                    Learn more
-                </Text>
-            );
-
-            return (
-                <Text style={styles.developmentModeText}>
-                    Development mode is enabled, your app will be slower but you
-                    can use useful development tools. {learnMoreButton}
-                </Text>
-            );
-        } else {
-            return (
-                <Text style={styles.developmentModeText}>
-                    You are not in development mode, your app will run at full
-                    speed.
-                </Text>
-            );
-        }
-    }
-
-    _handleLearnMorePress = () => {
-        WebBrowser.openBrowserAsync(
-            "https://docs.expo.io/versions/latest/guides/development-mode"
-        );
-    };
-
-    _handleHelpPress = () => {
-        WebBrowser.openBrowserAsync(
-            "https://docs.expo.io/versions/latest/guides/up-and-running.html#can-t-see-your-changes"
-        );
-    };
-
-    __postImage = () => {
-        let contents = await readFile(this.state.image, "base64");
-        let response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                Accept: 'application/json', 'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              image: contents
-            }),
-        });
-        responseJson = response.json();
-        this.setState({ imageType: response.type });
     }
 }
 
